@@ -1,0 +1,236 @@
+
+
+defaults:
+  - _self_
+  - level_method: all_levels
+
+hydra:
+  run:
+    dir: outputs/${dataset_name}/imagenet_pretrain/again/${val.gmm.fpi_info.lambda_fpi_mu}_${val.gmm.fpi_info.lambda_fpi_sigma}/${extra}
+    
+extra: "_"
+
+num_nodes: 1
+num_devices: 1
+num_gpus: 0
+num_workers: 3
+torch_compile: 0
+torch_compile_mode: "default"
+
+conv_type: matrixexp
+conv_type_choices: [standard, decomposition, matrixexp]
+flow_type: matrixexp
+coupling_block: ""
+coupling_block_choices: [""]
+
+num_levels: 3
+num_flows: [8, 8, 8]
+num_blocks: [8, 4, 2]
+hidden_channels: [128, 128, 128]
+
+bits: 8
+T: 1.0
+T_m: 1.0
+
+only_T: 0
+temperature_sampling_for_results: 1
+uniform_noise_value: 0.05
+
+train:
+  epochs: 500
+  center_warmup_epochs: 0
+  center_warmup_ckpt: ""
+  init_gaussians_on_warmup_mean: 0
+
+  init_size: 1024
+  init_batch_size: 1024
+  batch_size: 512
+  optimizer: adamax
+  optimizer_choices: [adamax, adam, adamw]
+  lr: 0.01
+  lr_decay: 0.5
+  step_size: [1000]
+  warmup_steps: 1000
+  ema_name: "ema"
+  ema: {
+    beta: 0.9999,
+    update_after_step: 0,
+    update_every: 1,
+    power: 0.75,
+  }
+  
+
+
+
+test: {batch_size: 1000}
+
+vae:
+  is_wrapping: 0
+  max_abs_train: 1
+  noise_dequant_path: ''
+  noise_scale: 0.05
+  
+
+val:
+  gmm:
+    do_it: 1
+    every_n_epochs: 1
+    n_loops: 1
+    train_epochs: 20000
+    epoch_choice_to_calculate_min_max: 100
+    merge_datasets_after: 1
+    disable_grad_train_mu_for_gaussians_until: 2000 
+    disable_grad_train_sigma_for_gaussians_until: 2000
+    use_train_dataset: 1
+    
+    mu_lr_arr: [0.1, 0.1, 0.01, 0.001]
+    mu_steps_arr: [0, 10, 11, 100]
+    sigma_lr_arr: [0.1, 0.1, 0.01, 0.001]
+    sigma_steps_arr: [0, 10, 11, 100]
+    manual_sched_lr_mu: geom
+    manual_sched_lr_sigma: geom
+
+    kld: 50
+    lambda_kld_mu_arr: [50, 25]
+    lambda_kld_mu_steps: [0, 100]
+    lambda_kld_sigma_arr: [50, 25]
+    lambda_kld_sigma_steps: [0, 100]
+    manual_sched_lambda_kld_mu: lin
+    manual_sched_lambda_kld_sigma: lin
+
+    lambda_nf_mu_arr:       [1, 1.0]
+    lambda_nf_mu_steps:     [0, 50]
+    lambda_nf_sigma_arr:    [1, 1.0]
+    lambda_nf_sigma_steps:  [0, 50]
+    manual_sched_lambda_nf_mu: geom
+    manual_sched_lambda_nf_sigma: geom
+
+
+    kld_blank_mu: 0
+    kld_blank_sigma: 0
+    nf_grad_mean_norm: 1
+    kld_n_minus_1_norm: 1
+
+    gaussian_method_name: one_per_class_all_in_center
+    gaussian_method_name_choices: [
+      one, 
+      one_conditioned_on_images, 
+      one_per_class_all_in_center, one_per_class_all_in_center_gaussian_checkpoint,
+    ]
+    training_algorithm: "fpi_nf_kld"
+    training_algorithm_choices: ["glem", "fpi_nf", "fpi_nf_kld"]
+    fpi_info: {
+      "kld_eq": "sym",
+      "kld_eq_choices": ["sym"],
+      "fpi_eq_cov": "psd_1",
+      "fpi_eq_cov_choices": ["not_psd", "psd_0", "psd_1", "not_sym"],
+      "exp_den_update": 1,
+      "full_cov": false,     
+      "identity_diag": true,
+      "max_iters": 1000,
+      "lambda_fpi_mu": 1000000,
+      "lambda_fpi_sigma": 1000000,
+      "beta_chol": 1.0e-2,
+      "epsilon_convergence": 1.0e-1,
+      "use_isotropic_variance_when_training_mean": 1,
+      "sum_mu_diffs_arr_square": 1,
+      "interval_mu": [0, 200],
+      "interval_sigma": [-1, -1],
+      "pw_kld_factors_scale": 10,
+    }
+    label_encoding_dh: 8
+    label_encoding_rows: 8
+
+    n_classification_experiments: 1
+    current_classification_experiment: 0
+
+    use_adam_for_gradients: 1
+    reset_adam_after_first_iteration: 1
+    adam_beta1: 0.9
+    adam_beta2: 0.999
+
+    reparam_name_choices: [no_reparam, sigmoid]
+    reparam_name: sigmoid
+    reparam_method:
+      no_reparam: {eps: 0.21, init_value: 1.1}
+      sigmoid:    {a: 1.0, b: 1.0, c: 0.25}
+  batch_size: 5000
+
+label_encoder:  
+  label_encoder_name: distanced_pixels_encoding_below_image
+  distanced_pixels_encoding_below_image: {noise_fn_name: uniform, mean: 0.0, std: 0.0, pxh: 8, k: 10, iters: 100}
+
+dataset_name: cifar10
+dataset_nf: cifar10
+dataset_classification: cifar10
+pickle_data_path: ../PytorchDatasets/MyDatasets/
+data_path: ../PytorchDatasets/MyDatasets/
+dataset_choices: [mnist, cifar10, cifar100, tinyimagenet, coco_32x32]
+
+
+dataset_info:
+  items_per_class_train: 500
+  items_per_class_val: 500
+  items_per_class_test: 0
+  mnist: {ch: 1, h: 32, w: 32, train_size: 60000, test_size: 10000, num_classes: 10, train_ratio: 0.9}
+  cifar10: {ch: 3, h: 32, w: 32, train_size: 50000, test_size: 10000, num_classes: 10, train_ratio: 0.9}
+  cifar100: {ch: 3, h: 32, w: 32, train_size: 50000, test_size: 10000, num_classes: 100, train_ratio: 0.9}
+  tinyimagenet: {ch: 3, h: 64, w: 64, train_size: 100000, test_size: 10000, num_classes: 200, train_ratio: 0.9}
+  imagenet: {ch: 3, h: 64, w: 64, train_size: 100000, test_size: 10000, num_classes: 200, train_ratio: 0.9}
+
+classification:
+  resnet_version: 18
+  drop_last: true
+  optimizer_name: sgd
+  adam:
+    lr: 0.0001
+    scheduler: multisteplr
+    steps: [5, 10, 15, 20, 25]
+    steps_decay: 1.0
+  sgd: {lr: 0.001, momentum: 0.9, weight_decay: 0.0005, scheduler: onecyclelr}
+  mnist:    {epochs: 3, batch_size: 100, imgs_per_class: 0}
+  cifar10:  {epochs: 30, batch_size: 100, imgs_per_class: 0}
+  cifar100: {epochs: 50, batch_size: 100, imgs_per_class: 0}
+  tinyimagenet: {epochs: 50, batch_size: 100, imgs_per_class: 0}
+  imagenet: {epochs: 50, batch_size: 100, imgs_per_class: 0}
+
+
+deterministic: true
+sync_batch_norm: false
+gpu_timer_active: false
+
+seed: 1999
+trainer_precision: 32
+automatic_optimization: 0
+refresh_rate: 1
+
+save_model_ckpt_every_n_epochs: 1
+save_start_epoch: 0
+save_every_n_epochs: 25
+test_every_n_epochs: 25
+
+debug: 0
+
+train_nf: 1
+test_nf_alone: 1
+num_test_alone: 1
+
+train_classifier: 1
+do_all_classifications: 1
+classifier_nf_strategy: nf_datasets
+classifier_nf_strategy_choices: [do_not_use, nf_datasets, nf_datasets_resample, mix_datasets, mix_datasets_resample]
+mixing_nbr: 1.0
+num_imgs_scale: 1.0
+do_k_bits_posterize_transform: 0
+
+
+# used to resume training
+nf_ckpt_path: ''
+# nf_load_path is used for the cnn, not in order to resume the training of the NF / It is also used to test the nf --> test_nf_alone
+nf_load_path: ''
+nf_weights_load_path: '/home/vicene/nfpi_gitlab/outputs/__ckpt/imagenet_32_pretrain.ckpt'
+gaussians_load_path: ''
+gaussian_hyperparams_pickle_file: ''
+gaussian_hyperparams_method: mu_cov_full
+gaussian_hyperparams_method_choices: [mu, scale_diag, cov_diag, cov_full, mu_scale_diag, mu_cov_diag, mu_cov_full]
+cnn_load_path: ''

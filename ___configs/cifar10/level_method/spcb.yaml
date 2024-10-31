@@ -1,0 +1,7 @@
+choice: "spcb"
+choices: ["all_levels", "all_levels_idx", "spcb"]
+level_idx: 3
+
+# spcb = split coupling prior block
+spcb: "ZeroConv2d"
+spcb_choice: ["ZeroConv2d", "ZeroConv2dBigger", "ConvBlock", "ConvBlockGlow", "cbam", "doublecbam"]

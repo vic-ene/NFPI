@@ -1,0 +1,8 @@
+choice: "all_levels_idx"
+choices: ["all_levels", "all_levels_idx", "spcb"]
+level_idx: 3
+
+# spcb = split prior copuling block
+spcb: "ZeroConv2d"
+spcb_choice: ["ZeroConv2d", "ZeroConv2dBigger", "ConvBlock", "ConvBlockGlow", "cbam", "doublecbam"]
+
